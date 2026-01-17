@@ -18,9 +18,17 @@ class User extends Authenticatable
      * @var array<int, string>
      */
     protected $fillable = [
-        'name',
         'email',
         'password',
+        // 'name',  <-- ลบอันนี้ออก
+        
+        // เพิ่มของใหม่เข้าไป
+        'first_name',
+        'last_name',
+        'phone',
+        'school',
+        'grade_level',
+        'is_term_accepted',
     ];
 
     /**
@@ -40,7 +48,10 @@ class User extends Authenticatable
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
+        'is_term_accepted' => 'boolean', // เพิ่มอันนี้ด้วยครับ
     ];
+
+    // ความสัมพันธ์
     public function registrations()
     {
         return $this->hasMany(Registration::class);
