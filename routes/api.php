@@ -1,19 +1,49 @@
 <?php
 
+// use Illuminate\Http\Request;
+// use Illuminate\Support\Facades\Route;
+
+// /*
+// |--------------------------------------------------------------------------
+// | API Routes
+// |--------------------------------------------------------------------------
+// |
+// | Here is where you can register API routes for your application. These
+// | routes are loaded by the RouteServiceProvider within a group which
+// | is assigned the "api" middleware group. Enjoy building your API!
+// |
+// */
+
+// Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
+//     return $request->user();
+// });
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\DataController;
+use App\Http\Controllers\RegistrationController;
+use Illuminate\Support\Facades\DB;
 
 /*
 |--------------------------------------------------------------------------
 | API Routes
 |--------------------------------------------------------------------------
-|
-| Here is where you can register API routes for your application. These
-| routes are loaded by the RouteServiceProvider within a group which
-| is assigned the "api" middleware group. Enjoy building your API!
-|
 */
 
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
+// 1. Public Routes (ใครก็เข้าได้ ไม่ต้อง Login)
+Route::post('/register', [AuthController::class, 'register']);
+Route::post('/login', [AuthController::class, 'login']);
+Route::get('/initial-data', [DataController::class, 'getInitialData']); // ดึงฐาน/รอบ
+
+// 2. Protected Routes (ต้อง Login ก่อนถึงจะเข้าได้)
+Route::group(['middleware' => ['auth:sanctum']], function () {
+    
+    // Auth
+    Route::post('/logout', [AuthController::class, 'logout']);
+    Route::get('/user', [AuthController::class, 'user']); // เช็คข้อมูลตัวเอง
+
+    // Registration
+    Route::post('/registrations', [RegistrationController::class, 'store']); // กดจอง
+    Route::get('/my-registrations', [RegistrationController::class, 'myRegistrations']); // ดูประวัติการจอง
+    Route::post('/registrations/sync', [RegistrationController::class, 'sync']);
 });
