@@ -33,4 +33,7 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::post('/registrations', [RegistrationController::class, 'store']); // กดจอง
     Route::get('/my-registrations', [RegistrationController::class, 'myRegistrations']); // ดูประวัติการจอง
     Route::post('/registrations/sync', [RegistrationController::class, 'sync']);
+
+    //edit profile
+    Route::post('/update-profile', [AuthController::class, 'updateProfile']);
 });

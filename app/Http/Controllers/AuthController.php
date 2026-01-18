@@ -91,4 +91,34 @@ class AuthController extends Controller
     {
         return $request->user();
     }
+
+    public function updateProfile(Request $request)
+    {
+        // 1. Validate ข้อมูลที่ส่งมา
+        $request->validate([
+            'first_name' => 'required|string|max:255',
+            'last_name' => 'required|string|max:255',
+            'phone' => 'required|string|max:20', // แก้ความยาวตามเหมาะสม
+            'school' => 'required|string|max:255',
+            'grade_level' => 'required|string|max:255',
+        ]);
+
+        // 2. ดึง User ปัจจุบันที่ Login อยู่
+        $user = $request->user();
+
+        // 3. อัปเดตข้อมูล
+        $user->update([
+            'first_name' => $request->first_name,
+            'last_name' => $request->last_name,
+            'phone' => $request->phone,
+            'school' => $request->school,
+            'grade_level' => $request->grade_level,
+        ]);
+
+        // 4. ส่งข้อมูล User ล่าสุดกลับไปให้ Frontend
+        return response()->json([
+            'message' => 'บันทึกข้อมูลเรียบร้อยแล้ว',
+            'user' => $user
+        ]);
+    }
 }
