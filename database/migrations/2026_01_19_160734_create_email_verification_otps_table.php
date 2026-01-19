@@ -6,17 +6,27 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * Run the migrations.
+     *
+     * @return void
+     */
     public function up()
     {
-        Schema::create('password_reset_otps', function (Blueprint $table) {
+        Schema::create('email_verification_otps', function (Blueprint $table) {
             $table->string('email')->index();
             $table->string('otp');
             $table->timestamp('created_at')->nullable();
         });
     }
 
+    /**
+     * Reverse the migrations.
+     *
+     * @return void
+     */
     public function down()
     {
-        Schema::dropIfExists('password_reset_otps');
+        Schema::dropIfExists('email_verification_otps');
     }
 };

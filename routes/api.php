@@ -24,6 +24,8 @@ Route::post('/forgot-password', [ForgotPasswordController::class, 'sendOtp']);
 Route::post('/reset-password', [ForgotPasswordController::class, 'resetPassword']);
 Route::post('/verify-otp', [ForgotPasswordController::class, 'verifyOtp']);
 Route::get('/rounds', [DataController::class, 'getRounds']);
+Route::post('/verify-email', [AuthController::class, 'verifyEmail']);
+Route::post('/resend-verification-otp', [AuthController::class, 'resendVerificationOtp']);
 
 
 // 2. Protected Routes (ต้อง Login ก่อนถึงจะเข้าได้)
