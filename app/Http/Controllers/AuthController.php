@@ -140,30 +140,35 @@ class AuthController extends Controller
             'password' => 'required',
         ]);
 
-        if (!Auth::attempt($credentials)) {
+        // 1. ลอง Login และเริ่ม Session
+        if (Auth::attempt($credentials)) {
+            // ดึงข้อมูล User ที่ Login ผ่านแล้ว (ไม่ต้อง Query ใหม่)
+            $user = Auth::user();
+
+            // 2. ตรวจสอบว่ายืนยันอีเมลหรือยัง
+            if (!$user->email_verified_at) {
+                Auth::logout(); // 🔥 สำคัญ: ต้องเตะออกทันทีถ้ายัังไม่ยืนยัน
+                
+                return response()->json([
+                    'message' => 'กรุณายืนยันอีเมลก่อนเข้าสู่ระบบ',
+                    'email_not_verified' => true
+                ], 403);
+            }
+
+            // 3. Login สมบูรณ์: สร้าง Session ID ใหม่เพื่อความปลอดภัย
+            $request->session()->regenerate();
+
             return response()->json([
-                'message' => 'Invalid login details'
-            ], 401);
+                'message' => 'Login successful',
+                'user' => $user,
+                // ไม่ต้องส่ง token แล้ว
+            ]);
         }
 
-        $user = User::where('email', $request['email'])->firstOrFail();
-        
-        // (Optional check) ถ้าต้องการบังคับว่าต้อง Verify ก่อนถึงจะ Login ได้ ให้เปิดคอมเมนต์นี้
-        if (!$user->email_verified_at) {
-             return response()->json([
-                 'message' => 'กรุณายืนยันอีเมลก่อนเข้าสู่ระบบ',
-                 'email_not_verified' => true // ส่ง Flag ไปบอก Frontend เผื่อจะ Redirect ไปหน้ายืนยัน
-             ], 403);
-        }
-
-        $user->tokens()->delete();
-        $token = $user->createToken('auth_token')->plainTextToken;
-
+        // Login ไม่ผ่าน
         return response()->json([
-            'message' => 'Login successful',
-            'user' => $user,
-            'token' => $token
-        ]);
+            'message' => 'อีเมลหรือรหัสผ่านไม่ถูกต้อง'
+        ], 401);
     }
 
     // 3. ออกจากระบบ (เหมือนเดิม)
