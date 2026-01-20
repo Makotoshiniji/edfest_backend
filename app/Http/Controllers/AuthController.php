@@ -100,13 +100,13 @@ class AuthController extends Controller
         // 4. ลบ OTP ทิ้ง
         DB::table('email_verification_otps')->where('email', $request->email)->delete();
 
-        // 5. Login อัตโนมัติ (สร้าง Token)
-        $token = $user->createToken('auth_token')->plainTextToken;
+        // ✅ ของใหม่: Login ให้เลย และสร้าง Session
+        Auth::login($user);
+        $request->session()->regenerate();
 
         return response()->json([
             'message' => 'Email verified successfully',
             'user' => $user,
-            'token' => $token
         ]);
     }
 
@@ -174,7 +174,11 @@ class AuthController extends Controller
     // 3. ออกจากระบบ (เหมือนเดิม)
     public function logout(Request $request)
     {
-        $request->user()->currentAccessToken()->delete();
+        
+        // ✅ ของใหม่ (ใช้ Session):
+        Auth::guard('web')->logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
 
         return response()->json([
             'message' => 'Logged out successfully'
