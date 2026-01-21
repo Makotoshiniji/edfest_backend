@@ -19,16 +19,17 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['http://localhost:5173', 'http://127.0.0.1:5173'],
+    // 👇 แก้ตรงนี้! ให้เพิ่ม port 5173 เข้าไป
+    'allowed_origins' => [
+        'http://localhost:3000', 
+        'http://localhost:5173',      // <-- เพิ่มอันนี้
+        'http://127.0.0.1:5173'       // <-- เผื่อไว้กรณี browser มองเป็น ip
+    ],
 
     'allowed_origins_patterns' => [],
-
     'allowed_headers' => ['*'],
-
     'exposed_headers' => [],
-
     'max_age' => 0,
-
     'supports_credentials' => true,
 
 ];
