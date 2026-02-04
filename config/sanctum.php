@@ -13,11 +13,12 @@ return [
     |
     */
 
-    'stateful' => explode(',', env('SANCTUM_STATEFUL_DOMAINS', sprintf(
-        '%s%s',
-        'localhost,localhost:3000,127.0.0.1,127.0.0.1:8000,::1,localhost:5173', // 👈 ผมเพิ่ม localhost:5173 ให้แล้วตรงนี้
-        env('APP_URL') ? ','.parse_url(env('APP_URL'), PHP_URL_HOST) : ''
-    ))),
+    'stateful' => [
+        'localhost:5173',
+        '127.0.0.1:5173',
+        'localhost:3000',
+        'localhost',
+    ],
 
     /*
     |--------------------------------------------------------------------------

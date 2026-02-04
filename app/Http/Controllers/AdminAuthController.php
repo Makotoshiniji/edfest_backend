@@ -46,25 +46,12 @@ class AdminAuthController extends Controller
     }
     
     // (Optional) ฟังก์ชันสร้าง Admin คนแรก (เอาไว้รันผ่าน Postman ทีเดียวแล้วลบออก)
-    // สมัคร Admin แบบกำหนดค่าเองได้
     public function register(Request $request) {
-        // 1. เพิ่ม Validation เพื่อตรวจสอบข้อมูลที่ส่งมา
-        $validated = $request->validate([
-            'name' => 'required|string',
-            'email' => 'required|email|unique:admin_accounts,email', // เช็คซ้ำในตาราง admin_accounts
-            'password' => 'required|min:6'
-        ]);
-
-        // 2. สร้าง Admin โดยใช้ข้อมูลจาก Request
         $admin = AdminAccount::create([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'password' => Hash::make($validated['password'])
+            'name' => 'Super Admin',
+            'email' => 'admin@edfest.com',
+            'password' => Hash::make('password1234')
         ]);
-
-        return response()->json([
-            'message' => 'Admin registered successfully',
-            'admin' => $admin
-        ], 201);
+        return response()->json($admin);
     }
 }
