@@ -17,8 +17,10 @@ use App\Http\Controllers\AdminController;
 */
 
 // 1. Public Routes (ใครก็เข้าได้ ไม่ต้อง Login)
-Route::post('/register', [AuthController::class, 'register']);
-Route::post('/login', [AuthController::class, 'login']);
+// Route::post('/register', [AuthController::class, 'register']);
+// Route::post('/login', [AuthController::class, 'login']);
+Route::post('/register', [AuthController::class, 'register'])->name('register');
+Route::post('/login', [AuthController::class, 'login'])->name('login');
 Route::get('/initial-data', [DataController::class, 'getInitialData']); // ดึงฐาน/รอบ
 Route::post('/forgot-password', [ForgotPasswordController::class, 'sendOtp']);
 Route::post('/reset-password', [ForgotPasswordController::class, 'resetPassword']);
