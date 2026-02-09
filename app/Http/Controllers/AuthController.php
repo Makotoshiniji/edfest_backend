@@ -6,16 +6,15 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;   // ✅ เพิ่ม
-use Illuminate\Support\Facades\Mail; // ✅ เพิ่ม
-use App\Mail\ResetPasswordOtp;       // ✅ เพิ่ม (ใช้ Class เดิมส่งเมล)
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\ResetPasswordOtp;
 
 class AuthController extends Controller
 {
-    // 1. สมัครสมาชิก (แก้ไข Flow: สมัคร -> ส่ง OTP -> ยังไม่ Login)
+    // 1. สมัครสมาชิก (เหมือนเดิม)
     public function register(Request $request)
     {
-        // ตรวจสอบข้อมูลที่ส่งมา
         $validated = $request->validate([
             'email' => 'required|email|unique:users,email',
             'password' => 'required|min:6|confirmed',
@@ -28,7 +27,6 @@ class AuthController extends Controller
             'is_term_accepted' => 'accepted',
         ]);
 
-        // บันทึกข้อมูล User ลง Database (แต่ยังไม่มี Token)
         $user = User::create([
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
@@ -41,33 +39,23 @@ class AuthController extends Controller
             'is_term_accepted' => true,
         ]);
 
-        // --- เพิ่ม Logic OTP ---
-        
-        // 1. สร้าง OTP 6 หลัก
         $otp = rand(100000, 999999);
-
-        // 2. บันทึกลงตาราง email_verification_otps
         DB::table('email_verification_otps')->updateOrInsert(
-            ['email' => $user->email], // เงื่อนไข (ถ้ามี email นี้อยู่แล้วให้อัปเดต)
-            ['otp' => $otp, 'created_at' => now()] // ข้อมูลที่จะบันทึก
+            ['email' => $user->email],
+            ['otp' => $otp, 'created_at' => now()]
         );
 
-        // 3. ส่งอีเมล
         try {
             Mail::to($user->email)->send(new ResetPasswordOtp($otp));
-        } catch (\Exception $e) {
-            // กรณีส่งเมลไม่ผ่าน อาจจะ log error ไว้ แต่ยอมให้ process ผ่านไปก่อน
-            // หรือจะ return error ก็ได้แล้วแต่ design
-        }
+        } catch (\Exception $e) {}
 
-        // 4. ส่ง Response กลับไป (สังเกตว่าไม่มี token)
         return response()->json([
             'message' => 'Registration successful. Please verify your email.',
             'email' => $user->email
         ], 201);
     }
 
-    // --- เพิ่มฟังก์ชันใหม่: ยืนยันอีเมล ---
+    // 2. ยืนยันอีเมล (✅ แก้ไข: แจก Token ทันทีเมื่อยืนยันสำเร็จ)
     public function verifyEmail(Request $request)
     {
         $request->validate([
@@ -75,7 +63,6 @@ class AuthController extends Controller
             'otp' => 'required|string'
         ]);
 
-        // 1. ตรวจสอบว่ามี OTP นี้จริงไหม
         $record = DB::table('email_verification_otps')
                     ->where('email', $request->email)
                     ->where('otp', $request->otp)
@@ -85,113 +72,101 @@ class AuthController extends Controller
             return response()->json(['message' => 'รหัส OTP ไม่ถูกต้อง'], 400);
         }
 
-        // 2. ตรวจสอบว่าหมดอายุหรือยัง (ให้เวลา 15 นาที)
         if (now()->diffInMinutes($record->created_at) > 15) {
             return response()->json(['message' => 'รหัส OTP หมดอายุ กรุณาขอรหัสใหม่'], 400);
         }
 
-        // 3. OTP ถูกต้อง -> อัปเดตสถานะ User
         $user = User::where('email', $request->email)->first();
         if ($user) {
             $user->email_verified_at = now();
             $user->save();
         }
 
-        // 4. ลบ OTP ทิ้ง
         DB::table('email_verification_otps')->where('email', $request->email)->delete();
 
-        // ✅ ของใหม่: Login ให้เลย และสร้าง Session
-        Auth::login($user);
-        $request->session()->regenerate();
+        // 🔥 สร้าง Token ส่งกลับไปให้เลย (ไม่ต้อง Login ซ้ำ)
+        $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
             'message' => 'Email verified successfully',
             'user' => $user,
+            'access_token' => $token, // ✅ ส่ง Token กลับไป
+            'token_type' => 'Bearer',
         ]);
     }
 
-    // --- เพิ่มฟังก์ชันใหม่: ขอ OTP ใหม่ ---
+    // 3. ขอ OTP ใหม่ (เหมือนเดิม)
     public function resendVerificationOtp(Request $request)
     {
         $request->validate(['email' => 'required|email']);
-
         $user = User::where('email', $request->email)->first();
+
         if (!$user) {
             return response()->json(['message' => 'ไม่พบอีเมลนี้ในระบบ'], 404);
         }
 
         $otp = rand(100000, 999999);
-
         DB::table('email_verification_otps')->updateOrInsert(
             ['email' => $request->email],
             ['otp' => $otp, 'created_at' => now()]
         );
 
         Mail::to($request->email)->send(new ResetPasswordOtp($otp));
-
         return response()->json(['message' => 'ส่งรหัส OTP ใหม่เรียบร้อยแล้ว']);
     }
 
-    // 2. เข้าสู่ระบบ (เหมือนเดิม)
+    // 4. เข้าสู่ระบบ (✅ แก้ไข: เปลี่ยนจาก Session เป็น Token)
     public function login(Request $request)
     {
-        $credentials = $request->validate([
+        $request->validate([
             'email' => 'required|email',
             'password' => 'required',
         ]);
 
-        // 1. ลอง Login และเริ่ม Session
-        if (Auth::attempt($credentials)) {
-            // ดึงข้อมูล User ที่ Login ผ่านแล้ว (ไม่ต้อง Query ใหม่)
-            $user = Auth::user();
+        $user = User::where('email', $request->email)->first();
 
-            // 2. ตรวจสอบว่ายืนยันอีเมลหรือยัง
-            if (!$user->email_verified_at) {
-                Auth::logout(); // 🔥 สำคัญ: ต้องเตะออกทันทีถ้ายัังไม่ยืนยัน
-                
-                return response()->json([
-                    'message' => 'กรุณายืนยันอีเมลก่อนเข้าสู่ระบบ',
-                    'email_not_verified' => true
-                ], 403);
-            }
-
-            // 3. Login สมบูรณ์: สร้าง Session ID ใหม่เพื่อความปลอดภัย
-            $request->session()->regenerate();
-
-            return response()->json([
-                'message' => 'Login successful',
-                'user' => $user,
-                // ไม่ต้องส่ง token แล้ว
-            ]);
+        // ตรวจสอบรหัสผ่าน
+        if (! $user || ! Hash::check($request->password, $user->password)) {
+            return response()->json(['message' => 'อีเมลหรือรหัสผ่านไม่ถูกต้อง'], 401);
         }
 
-        // Login ไม่ผ่าน
+        // ตรวจสอบยืนยันตัวตน
+        if (! $user->email_verified_at) {
+            return response()->json([
+                'message' => 'กรุณายืนยันอีเมลก่อนเข้าสู่ระบบ',
+                'email_not_verified' => true
+            ], 403);
+        }
+
+        // 🔥 สร้าง Token (นี่คือหัวใจสำคัญของระบบไม่มี Cookie)
+        $token = $user->createToken('auth_token')->plainTextToken;
+
         return response()->json([
-            'message' => 'อีเมลหรือรหัสผ่านไม่ถูกต้อง'
-        ], 401);
+            'message' => 'Login successful',
+            'user' => $user,
+            'access_token' => $token, // ✅ ส่ง Token กลับไป
+            'token_type' => 'Bearer',
+        ]);
     }
 
-    // 3. ออกจากระบบ (เหมือนเดิม)
+    // 5. ออกจากระบบ (✅ แก้ไข: ลบ Token ทิ้ง)
     public function logout(Request $request)
     {
-        
-        // ✅ ของใหม่ (ใช้ Session):
-        Auth::guard('web')->logout();
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
+        // ลบ Token ที่ใช้งานอยู่ปัจจุบันทิ้ง
+        $request->user()->currentAccessToken()->delete();
 
         return response()->json([
             'message' => 'Logged out successfully'
         ]);
     }
 
-    // 4. ดึงข้อมูล User ปัจจุบัน (เหมือนเดิม)
+    // 6. ดึงข้อมูล User (เหมือนเดิม)
     public function user(Request $request)
     {
         return $request->user();
     }
 
-    // 5. อัปเดตโปรไฟล์ (เหมือนเดิม)
+    // 7. อัปเดตโปรไฟล์ (เหมือนเดิม)
     public function updateProfile(Request $request)
     {
         $request->validate([
@@ -205,14 +180,7 @@ class AuthController extends Controller
 
         $user = $request->user();
 
-        $user->update([
-            'title' => $request->title,
-            'first_name' => $request->first_name,
-            'last_name' => $request->last_name,
-            'phone' => $request->phone,
-            'school' => $request->school,
-            'grade_level' => $request->grade_level,
-        ]);
+        $user->update($request->all()); // เขียนย่อได้ถ้า fillable ครบ
 
         return response()->json([
             'message' => 'บันทึกข้อมูลเรียบร้อยแล้ว',

@@ -46,6 +46,14 @@ require __DIR__.'/../vendor/autoload.php';
 
 $app = require_once __DIR__.'/../bootstrap/app.php';
 
+// --- เริ่มการดัก Log ตรงนี้ ---
+// ใช้ประโยคคำสั่ง PHP พื้นฐานดักไว้ก่อน เผื่อกรณี Laravel Boot ไม่ขึ้น
+if (isset($_SERVER['REQUEST_URI'])) {
+    // บันทึกลงไฟล์ log ของ laravel โดยตรง
+    $logMessage = "[" . date('Y-m-d H:i:s') . "] Incoming Request: " . $_SERVER['REQUEST_METHOD'] . " " . $_SERVER['REQUEST_URI'] . " from " . $_SERVER['REMOTE_ADDR'] . PHP_EOL;
+    file_put_contents(__DIR__.'/../storage/logs/laravel.log', $logMessage, FILE_APPEND);
+}
+
 $kernel = $app->make(Kernel::class);
 
 $response = $kernel->handle(
