@@ -45,13 +45,25 @@ class AdminAuthController extends Controller
         return response()->json(['message' => 'ออกจากระบบสำเร็จ']);
     }
     
-    // (Optional) ฟังก์ชันสร้าง Admin คนแรก (เอาไว้รันผ่าน Postman ทีเดียวแล้วลบออก)
+// แก้ไขฟังก์ชัน register ให้รับค่าจาก Postman
     public function register(Request $request) {
-        $admin = AdminAccount::create([
-            'name' => 'Super Admin',
-            'email' => 'admin@edfest.com',
-            'password' => Hash::make('password1234')
+        // Validate ข้อมูล
+        $request->validate([
+            'name' => 'required|string',
+            'email' => 'required|email|unique:admin_accounts', // ห้ามซ้ำ
+            'password' => 'required|string|min:6',
         ]);
-        return response()->json($admin);
+
+        // สร้าง Admin จากข้อมูลที่ส่งมา
+        $admin = AdminAccount::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => Hash::make($request->password)
+        ]);
+
+        return response()->json([
+            'message' => 'สร้าง Admin สำเร็จ',
+            'data' => $admin
+        ], 201);
     }
 }

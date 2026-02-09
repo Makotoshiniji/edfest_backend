@@ -185,6 +185,6 @@ class AuthController extends Controller
         return response()->json([
             'message' => 'บันทึกข้อมูลเรียบร้อยแล้ว',
             'user' => $user
-        ]);
+        ]);   
     }
 }
