@@ -101,8 +101,8 @@ class AuthController extends Controller
         DB::table('email_verification_otps')->where('email', $request->email)->delete();
 
         // ✅ ของใหม่: Login ให้เลย และสร้าง Session
-        Auth::login($user);
-        $request->session()->regenerate();
+        //Auth::login($user);
+        //$request->session()->regenerate();
 
         return response()->json([
             'message' => 'Email verified successfully',

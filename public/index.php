@@ -33,6 +33,14 @@ if (file_exists($maintenance = __DIR__.'/../storage/framework/maintenance.php'))
 
 require __DIR__.'/../vendor/autoload.php';
 
+// --- เริ่มโค้ดดักจับ (Trap) ---
+try {
+    $logPath = __DIR__.'/../storage/logs/debug_ingress.log';
+    $data = date('Y-m-d H:i:s') . " | " . ($_SERVER['REQUEST_URI']??'-') . " | " . ($_SERVER['REQUEST_METHOD']??'-') . "\n";
+    file_put_contents($logPath, $data, FILE_APPEND);
+} catch (\Exception $e) {}
+// --- จบโค้ดดักจับ ---
+
 /*
 |--------------------------------------------------------------------------
 | Run The Application
