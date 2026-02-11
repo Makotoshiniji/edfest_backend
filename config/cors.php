@@ -32,4 +32,15 @@ return [
     'max_age' => 0,
     'supports_credentials' => true,
 
+    'allowed_origins' => [
+        // สำหรับ Production ✅
+        'https://edfest-kku.com',
+        'https://www.edfest-kku.com',
+        
+        // สำหรับ Development (เก็บไว้ได้ครับ)
+        'http://localhost:3000',
+        'http://localhost:5173',
+        'http://127.0.0.1:5173',
+    ],
+
 ];
